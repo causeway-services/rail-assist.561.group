@@ -1,0 +1,13 @@
+{
+  "host": "north-shore-scenic-railroad-service.561.group",
+  "name": "North Shore Window",
+  "kind": "app",
+  "appType": "WebApplication",
+  "applicationCategory": "TravelApplication",
+  "company": "causeway",
+  "title": "North Shore Window — independent scenic rail companion",
+  "description": "An independent, unofficial, offline-first field guide for North Shore scenic rail rides from Duluth. Your location stays on your device.",
+  "tagline": "An independent, unofficial, offline-first field guide for scenic rail rides from Duluth.",
+  "eyebrow": "561 Group · Causeway Services · Unofficial",
+  "llms": "North Shore Window is an independent, unofficial, offline-first moving field guide for North Shore scenic rail rides from Duluth, Minnesota. It is not affiliated with, endorsed by, or operated by the North Shore Scenic Railroad or the Lake Superior Railroad Museum, and it does not offer live train status, schedules, tickets or navigation: use the official site for those. It is a Causeway Services application of the 561 Group.\n\n## How to use it\n\nOpen https://north-shore-scenic-railroad-service.561.group/ on a phone before the ride; it works offline once loaded. Choose Start ride when seated and allow the browser's location prompt. The app matches your GPS position to a modelled rail corridor and shows route progress, the next sourced story and an estimated side and time cue. Choose how much interface you want: Glance, Listen or Explore. You can also preview the route without GPS.\n\n## Privacy and rules\n\n- Route matching, trip memory, bookmarks and narration preferences stay in your browser; nothing is uploaded, and no account is needed.\n- Export of your trip as GeoJSON is explicit and local; Clear removes it.\n- GPS distance, side and time cues are estimates and freeze when the match is uncertain; the guide is approximate, not for safety or crew-instruction use.\n- Route geometry is from OpenStreetMap contributors; stories link to their sources.\n\n## Data\n\n- [Route](https://north-shore-scenic-railroad-service.561.group/route.json): the modelled corridor as JSON.\n\n## Publisher\n\nCauseway Services, the 561 Group's public-services company: https://services.561.group/"
+}

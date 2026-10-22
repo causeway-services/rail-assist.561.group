@@ -12,6 +12,7 @@ import {
   NORTH_SHORE_WINDOW_HEADERS,
   NORTH_SHORE_WINDOW_ICON,
 } from "@causeway-services/north-shore-scenic-railroad-service/assets";
+import { COMPANIES, headersFile, llmsTxt, patchHtml, robotsTxt, securityTxt, sitemapXml } from "./apply-standards.mjs";
 import { NORTH_SHORE_WINDOW_CLIENT } from "@causeway-services/north-shore-scenic-railroad-service/client";
 import { NORTH_SHORE_ROUTE } from "@causeway-services/north-shore-scenic-railroad-service/route-data";
 import { renderNorthShoreWindow } from "@causeway-services/north-shore-scenic-railroad-service/render";
@@ -20,6 +21,14 @@ const siteDirectory = dirname(dirname(fileURLToPath(import.meta.url)));
 const publicDirectory = join(siteDirectory, "public");
 const baseUrl = "https://north-shore-scenic-railroad-service.561.group/";
 const releaseManifestPath = "release-manifest.json";
+
+// The web's ordinary standards (head tags, robots, sitemap, llms.txt, security.txt, icons and card)
+// come from standards.json and brand/, through the estate's apply-standards tool.
+const standards = JSON.parse(readFileSync(join(siteDirectory, "standards.json"), "utf8"));
+standards.company = { ...COMPANIES[standards.company] };
+const brandFile = (name) => readFileSync(join(siteDirectory, "brand", name));
+// The engine's response headers, plus HSTS (without includeSubDomains: other *.561.group hosts are not all HTTPS-ready).
+const headersWithHsts = () => NORTH_SHORE_WINDOW_HEADERS.replace(/^\/\*\n/u, "/*\n  Strict-Transport-Security: max-age=63072000\n");
 
 const record = (body, mediaType, provenance, cacheControl) => Object.freeze({
   body,
@@ -30,13 +39,19 @@ const record = (body, mediaType, provenance, cacheControl) => Object.freeze({
 
 function initialArtifacts() {
   return new Map([
-    ["index.html", record(renderNorthShoreWindow(), "text/html; charset=utf-8", "north-shore-window:render")],
+    ["index.html", record(patchHtml(renderNorthShoreWindow(), standards, { path: "/" }), "text/html; charset=utf-8", "north-shore-window:render+standards")],
     ["app.js", record(NORTH_SHORE_WINDOW_CLIENT, "text/javascript; charset=utf-8", "north-shore-window:client")],
     ["icon.svg", record(NORTH_SHORE_WINDOW_ICON, "image/svg+xml", "north-shore-window:assets")],
     ["route.json", record(`${JSON.stringify(NORTH_SHORE_ROUTE)}\n`, "application/json; charset=utf-8", "north-shore-window:route-data")],
-    ["_headers", record(NORTH_SHORE_WINDOW_HEADERS, "text/plain; charset=utf-8", "north-shore-window:cloudflare-carrier")],
-    ["robots.txt", record(`User-agent: *\nAllow: /\n\nSitemap: ${baseUrl}sitemap.xml\n`, "text/plain; charset=utf-8", "north-shore-window:crawler")],
-    ["sitemap.xml", record(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n  <url><loc>${baseUrl}</loc></url>\n</urlset>\n`, "application/xml; charset=utf-8", "north-shore-window:crawler")],
+    ["_headers", record(headersWithHsts(), "text/plain; charset=utf-8", "north-shore-window:cloudflare-carrier")],
+    ["robots.txt", record(robotsTxt(standards), "text/plain; charset=utf-8", "north-shore-window:crawler")],
+    ["sitemap.xml", record(sitemapXml(standards, new Date().toISOString().slice(0, 10)), "application/xml; charset=utf-8", "north-shore-window:crawler")],
+    ["llms.txt", record(llmsTxt(standards), "text/plain; charset=utf-8", "north-shore-window:standards")],
+    [".well-known/security.txt", record(securityTxt(standards), "text/plain; charset=utf-8", "north-shore-window:standards")],
+    ["favicon.svg", record(brandFile("favicon.svg"), "image/svg+xml", "north-shore-window:brand")],
+    ["apple-touch-icon.png", record(brandFile("apple-touch-icon.png"), "image/png", "north-shore-window:brand")],
+    ["logo.png", record(brandFile("logo.png"), "image/png", "north-shore-window:brand")],
+    ["card.png", record(brandFile("card.png"), "image/png", "north-shore-window:brand")],
     ["404.html", record("<!doctype html><title>Not found</title><p>Not found.</p>\n", "text/html; charset=utf-8", "north-shore-window:cloudflare-carrier")],
     ["north-shore-route-position.mjs", record(readFileSync(fileURLToPath(import.meta.resolve("@causeway-services/north-shore-scenic-railroad-service/route-position"))), "text/javascript; charset=utf-8", "north-shore-window:route-position")],
     ["route-ride-tracker.mjs", record(readFileSync(fileURLToPath(import.meta.resolve("@causeway-services/north-shore-scenic-railroad-service/ride-tracker"))), "text/javascript; charset=utf-8", "north-shore-window:ride-tracker")],
@@ -68,7 +83,7 @@ export async function syncNorthShorePublicAssets() {
         icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml", purpose: "any maskable" }],
       },
       precache: {
-        excludePaths: ["_headers", "404.html"],
+        excludePaths: ["_headers", "404.html", ".well-known/security.txt", "llms.txt", "card.png", "logo.png", "apple-touch-icon.png", "favicon.svg"],
       },
       cacheNamePrefix: "north-shore-window",
       runtimeCaching: false,
@@ -102,7 +117,10 @@ export async function syncNorthShorePublicAssets() {
   // silently enter a deployment outside the release manifest.
   rmSync(publicDirectory, { recursive: true, force: true });
   mkdirSync(publicDirectory, { recursive: true });
-  for (const [path, artifact] of artifacts) writeFileSync(join(publicDirectory, path), artifact.body);
+  for (const [path, artifact] of artifacts) {
+    mkdirSync(dirname(join(publicDirectory, path)), { recursive: true });
+    writeFileSync(join(publicDirectory, path), artifact.body);
+  }
 
   const directoryVerification = await verifyWebReleaseDirectory({
     manifest: release.manifest,
